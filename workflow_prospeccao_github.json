@@ -1,0 +1,139 @@
+{
+  "name": "Prospecção WhatsApp — n8n + IA",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "days", "daysInterval": 1}],
+          "triggerAtHour": 10,
+          "triggerAtMinute": 0
+        }
+      },
+      "id": "node1",
+      "name": "Agenda (10h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "value": "SEU_SPREADSHEET_ID", "mode": "id"},
+        "sheetName": {"__rl": true, "value": "leads_limpos", "mode": "name"},
+        "options": {}
+      },
+      "id": "node2",
+      "name": "Ler Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = [];\n\nfor (const item of $input.all()) {\n  const nome = item.json.nome || '';\n  const telefone = item.json.telefone || '';\n  const temSite = item.json.tem_site || 'NAO';\n  const status = item.json.status || '';\n\n  if (!telefone || status === 'enviado') continue;\n\n  let angulo = '';\n  if (temSite === 'NAO') {\n    angulo = `não encontramos nenhum site para ${nome} no Google`;\n  } else {\n    angulo = `o site de ${nome} pode estar perdendo clientes por não aparecer no Google`;\n  }\n\n  items.push({ json: { nome, telefone, temSite, angulo } });\n}\n\nreturn items;"
+      },
+      "id": "node3",
+      "name": "Filtrar e Preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer SUA_GROQ_API_KEY"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"max_tokens\": 200,\n  \"messages\": [{\"role\": \"user\", \"content\": \"Crie uma mensagem curta de prospecção no WhatsApp para {{ $json.nome }}. O ângulo é: {{ $json.angulo }}. Ofereça site profissional + chatbot IA no WhatsApp. Tom: direto e humano. Máximo 3 linhas. Assine como [SEU NOME].\"}]\n}",
+        "options": {}
+      },
+      "id": "node4",
+      "name": "Gerar Mensagem (Groq)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const content = $json.choices[0].message.content;\nconst prev = $('Filtrar e Preparar').item.json;\nreturn [{ json: { mensagem: content, nome: prev.nome, telefone: prev.telefone } }];"
+      },
+      "id": "node5",
+      "name": "Extrair Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "id": "node6",
+      "name": "Espere 1 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1100, 300],
+      "webhookId": "wait-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=SUA_EVOLUTION_URL/message/sendText/NOME_DA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "SUA_EVOLUTION_API_KEY"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"55{{ $json.telefone }}\",\n  \"text\": \"{{ $json.mensagem }}\"\n}",
+        "options": {}
+      },
+      "id": "node7",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {"__rl": true, "value": "SEU_SPREADSHEET_ID", "mode": "id"},
+        "sheetName": {"__rl": true, "value": "leads_limpos", "mode": "name"},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {"status": "enviado"},
+          "matchingColumns": ["nome"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "node8",
+      "name": "Atualizar Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1540, 300]
+    }
+  ],
+  "connections": {
+    "Agenda (10h)": {"main": [[{"node": "Ler Leads", "type": "main", "index": 0}]]},
+    "Ler Leads": {"main": [[{"node": "Filtrar e Preparar", "type": "main", "index": 0}]]},
+    "Filtrar e Preparar": {"main": [[{"node": "Gerar Mensagem (Groq)", "type": "main", "index": 0}]]},
+    "Gerar Mensagem (Groq)": {"main": [[{"node": "Extrair Mensagem", "type": "main", "index": 0}]]},
+    "Extrair Mensagem": {"main": [[{"node": "Espere 1 min", "type": "main", "index": 0}]]},
+    "Espere 1 min": {"main": [[{"node": "Enviar WhatsApp", "type": "main", "index": 0}]]},
+    "Enviar WhatsApp": {"main": [[{"node": "Atualizar Status", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}
