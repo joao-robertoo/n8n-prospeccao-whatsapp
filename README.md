@@ -15,7 +15,7 @@ Você passa horas no Google Maps, copia nome por nome, abre o ChatGPT, personali
 
 **Isso é tempo. Tempo é dinheiro. Dinheiro é liberdade.**
 
-Esse projeto automatiza tudo isso — da coleta de leads ao disparo no WhatsApp — com mensagens geradas por IA, personalizadas por lead, rodando sozinho todo dia.
+Esse projeto automatiza tudo isso da coleta de leads ao disparo no WhatsApp com mensagens geradas por IA, personalizadas por lead, rodando sozinho todo dia.
 
 ---
 
