@@ -136,8 +136,8 @@ SHEETS_ID=          → ID da sua planilha Google
 
 **João Roberto** — Desenvolvedor de sites, landing pages e automações com IA
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-blue?style=flat-square)](seu-linkedin-aqui)
-[![GitHub](https://img.shields.io/badge/GitHub-Seguir-black?style=flat-square)](seu-github-aqui)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conectar-blue?style=flat-square)](https://linkedin.com/in/joaorobertoo)
+[![GitHub](https://img.shields.io/badge/GitHub-Seguir-black?style=flat-square)](https://github.com/joao-robertoo)
 
 ---
 
